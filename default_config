@@ -9,6 +9,16 @@ export const development: IConfig = {
       path: 'order',
       channels: [EChannel.alipay],
       currencies: [ECurrency.cny],
+      parameters: {
+        orderId: {
+          type: 'string',
+          description: 'order id',
+        },
+        channel: {
+          type: 'string',
+          description: 'channel. ["alipay"]',
+        },
+      },
       charge: async (ctx: IContext): Promise<IChargeDocument> => {
         const order: any = 'xxx';
         return {
@@ -48,6 +58,16 @@ export const production: IConfig = {
       path: 'order',
       channels: [EChannel.alipay],
       currencies: [ECurrency.cny],
+      parameters: {
+        orderId: {
+          type: 'string',
+          description: 'order id',
+        },
+        channel: {
+          type: 'string',
+          description: 'channel. ["alipay"]',
+        },
+      },
       charge: async (ctx: IContext): Promise<IChargeDocument> => {
         const order: any = 'xxx';
         return {

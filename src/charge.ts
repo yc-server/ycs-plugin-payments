@@ -1,4 +1,5 @@
 import { IModel, Model, Schema } from '@ycs/core/lib/db';
+import { IDocsDataTypeProperties } from '@ycs/core/lib/docs';
 import { IContext } from '@ycs/core/lib/context';
 import { Client } from '@ycnt/alipay';
 
@@ -73,8 +74,10 @@ export interface IPayment {
   path: string;
   channels: EChannel[];
   currencies: ECurrency[];
+  parameters: IDocsDataTypeProperties;
   charge: (ctx: IContext) => Promise<IChargeDocument>;
   webhook: (doc: IChargeDocument) => Promise<void>;
   alipayClient?: Client;
   https?: boolean;
 }
+

@@ -51,7 +51,18 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
         description: 'create a charge',
         consumes: ['application/json', 'application/xml'],
         produces: ['application/json', 'application/xml'],
-        parameters: [chargeModel.docSchema.body],
+        parameters: [
+          {
+            name: 'body',
+            in: 'body',
+            schema: {
+              type: 'object',
+              properties: payment.parameters,
+              xml: { name: 'xml' },
+              required: true,
+            },
+          },
+        ],
         responses: {
           200: {
             description: 'Successful operation',
