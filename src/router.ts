@@ -14,6 +14,7 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
     const controller = new Controller(chargeModel, payment);
     const prefix = '__payments_' + payment.path;
     const chargePrefix = prefix + '_charge';
+    const webhookPrefix = prefix + '_webhook';
     const paths: IDocs[] = [
       {
         path: '/charge',
@@ -45,7 +46,7 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
         auth: {
           type: 'isAuthenticated',
         },
-        tags: [prefix],
+        tags: [chargePrefix],
         summary: 'create a charge',
         description: 'create a charge',
         consumes: ['application/json', 'application/xml'],
@@ -76,16 +77,12 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
     }
     for (const chanel of payment.channels) {
       paths.push({
-        path: '/',
+        path: '/webhook/pay/' + chanel,
         methods: ['post'],
         controller: controller.createWebhook(chanel),
-        auth: {
-          type: 'hasRoles',
-          roles: config.roles,
-        },
-        tags: ['__rolesmanager'],
-        summary: 'Manage roles',
-        description: `<b>require roles: </b>${config.roles.join()}`,
+        tags: [webhookPrefix],
+        summary: 'webhook for payments',
+        description: 'webhook for payments',
         consumes: ['application/json', 'application/xml'],
         produces: ['application/json', 'application/xml'],
         parameters: [],

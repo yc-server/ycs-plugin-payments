@@ -80,7 +80,7 @@ export class Controller {
       total_amount: entity.amount.toString(),
       body: entity.body,
     });
-    req.data.notify_url = this.webhookPrefix + '/' + entity.channel;
+    req.data.notify_url = this.webhookPrefix + '/pay/' + entity.channel;
     return this.payment.alipayClient.execute(req);
   };
 }
