@@ -34,7 +34,7 @@ export const development: IConfig = {
           __auth: ctx.request.auth._id,
         };
       },
-      webhook: async (doc: IChargeDocument): Promise<void> => {
+      chargeWebhook: async (doc: IChargeDocument): Promise<void> => {
         const order: any = 'xxx by doc.extra.orderId';
         order.status = 'paid';
         await order.save()
@@ -83,7 +83,7 @@ export const production: IConfig = {
           __auth: ctx.request.auth._id,
         };
       },
-      webhook: async (doc: IChargeDocument): Promise<void> => {
+      chargeWebhook: async (doc: IChargeDocument): Promise<void> => {
         const order: any = 'xxx by doc.extra.orderId';
         order.status = 'paid';
         await order.save()

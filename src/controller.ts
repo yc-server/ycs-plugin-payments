@@ -35,16 +35,16 @@ export class Controller {
     }
   };
 
-  public createWebhook = (channel: EChannel) => {
+  public createChargeWebhook = (channel: EChannel) => {
     switch (channel) {
       case EChannel.alipay:
-        return this.webhookForAlipay;
+        return this.chargeWebhookForAlipay;
       default:
         throw new Error('Unsupported payment channel');
     }
   };
 
-  private webhookForAlipay = async (ctx: IContext) => {
+  private chargeWebhookForAlipay = async (ctx: IContext) => {
     try {
       const verified = this.payment.alipayClient.verify(ctx.query);
       if (!verified) throw Boom.badData('failed to verify sign');
@@ -54,7 +54,7 @@ export class Controller {
           .exec();
         entity.paid = true;
         await entity.save();
-        await this.payment.webhook(entity);
+        await this.payment.chargeWebhook(entity);
       }
       ctx.status = 200;
       ctx.body = 'success';

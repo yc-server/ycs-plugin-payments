@@ -90,7 +90,7 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
       paths.push({
         path: '/webhook/pay/' + chanel,
         methods: ['post'],
-        controller: controller.createWebhook(chanel),
+        controller: controller.createChargeWebhook(chanel),
         tags: [webhookPrefix],
         summary: 'webhook for payments',
         description: 'webhook for payments',
@@ -107,7 +107,7 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
       });
     }
 
-    routers.push(chargeModel.routes(prefix, ...paths));
+    routers.push(chargeModel.routes('/' + prefix, ...paths));
   }
 
   return routers;

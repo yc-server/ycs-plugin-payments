@@ -76,8 +76,7 @@ export interface IPayment {
   currencies: ECurrency[];
   parameters: IDocsDataTypeProperties;
   charge: (ctx: IContext) => Promise<IChargeDocument>;
-  webhook: (doc: IChargeDocument) => Promise<void>;
+  chargeWebhook: (doc: IChargeDocument) => Promise<void>;
   alipayClient?: Client;
   https?: boolean;
 }
-
