@@ -1,6 +1,5 @@
 import { IContext } from '@ycs/core/lib/context';
-// import { IConfig } from 'ycs-plugin-payments';
-import { IConfig, EChannel, ECurrency, IChargeDocument } from './src/';
+import { IConfig, EChannel, ECurrency, IChargeDocument } from 'ycs-plugin-payments';
 import { Client, EClientSignType } from '@ycnt/alipay';
 
 export const development: IConfig = {
