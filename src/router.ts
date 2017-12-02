@@ -87,24 +87,45 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
       controller.webhookPrefix = `${url}/${prefix}/webhook`;
     }
     for (const chanel of payment.channels) {
-      paths.push({
-        path: '/webhook/pay/' + chanel,
-        methods: ['post'],
-        controller: controller.createChargeWebhook(chanel),
-        tags: [webhookPrefix],
-        summary: 'webhook for payments',
-        description: 'webhook for payments',
-        consumes: ['application/json', 'application/xml'],
-        produces: ['application/json', 'application/xml'],
-        parameters: [],
-        responses: {
-          200: {
-            description: 'Successful operation',
+      if (payment.test) {
+        paths.push({
+          path: '/webhook/pay/' + chanel + '/test/:id',
+          methods: ['post'],
+          controller: controller.testChargeWebhook,
+          tags: [webhookPrefix],
+          summary: 'webhook for payments',
+          description: 'webhook for payments',
+          consumes: ['application/json', 'application/xml'],
+          produces: ['application/json', 'application/xml'],
+          parameters: [chargeModel.docSchema.paramId],
+          responses: {
+            200: {
+              description: 'Successful operation',
+            },
+            '4xx': chargeModel.docSchema.response4xx,
+            '5xx': chargeModel.docSchema.response5xx,
           },
-          '4xx': chargeModel.docSchema.response4xx,
-          '5xx': chargeModel.docSchema.response5xx,
-        },
-      });
+        });
+      } else {
+        paths.push({
+          path: '/webhook/pay/' + chanel,
+          methods: ['post'],
+          controller: controller.createChargeWebhook(chanel),
+          tags: [webhookPrefix],
+          summary: 'webhook for payments',
+          description: 'webhook for payments',
+          consumes: ['application/json', 'application/xml'],
+          produces: ['application/json', 'application/xml'],
+          parameters: [],
+          responses: {
+            200: {
+              description: 'Successful operation',
+            },
+            '4xx': chargeModel.docSchema.response4xx,
+            '5xx': chargeModel.docSchema.response5xx,
+          },
+        });
+      }
     }
 
     routers.push(chargeModel.routes('/' + prefix, ...paths));

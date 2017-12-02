@@ -7,7 +7,7 @@ import { Client, TradeAppPayRequest } from '@ycnt/alipay';
 
 export class Controller {
   public webhookPrefix: string;
-  constructor(private model: IModel, private payment: IPayment) {}
+  constructor(private model: IModel, private payment: IPayment) { }
   // Gets a list of Models
   public index = async (ctx: IContext) => {
     try {
@@ -29,6 +29,22 @@ export class Controller {
       const entity = await this.model.create(doc);
       const res = await this.createPayment(entity);
       response(ctx, 201, res);
+    } catch (e) {
+      handleError(ctx, e);
+    }
+  };
+
+  public testChargeWebhook = async (ctx: IContext) => {
+    try {
+      const entity: any = await this.model
+        .findById(ctx.params.id)
+        .exec();
+      if (!entity) throw Boom.notFound();
+      entity.paid = true;
+      await entity.save();
+      await this.payment.chargeWebhook(entity);
+      ctx.status = 200;
+      ctx.body = 'success';
     } catch (e) {
       handleError(ctx, e);
     }
@@ -62,10 +78,18 @@ export class Controller {
     }
   };
 
-  private createPayment = (entity: any): Promise<any> => {
+  private createPayment = async (entity: any): Promise<any> => {
+    if (this.payment.test) {
+      const webhook = this.webhookPrefix + '/pay/' + entity.channel + '/test/' + entity._id;
+      return {
+        isYcsTest: true,
+        webhook: webhook,
+        charge: entity,
+      };
+    }
     switch (entity.channel) {
       case EChannel.alipay:
-        return this.createPaymentForAlipay(entity);
+        return await this.createPaymentForAlipay(entity);
       default:
         throw Boom.badData('Unsupported payment method');
     }
