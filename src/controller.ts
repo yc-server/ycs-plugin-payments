@@ -7,7 +7,7 @@ import { Client, TradeAppPayRequest } from '@ycnt/alipay';
 
 export class Controller {
   public webhookPrefix: string;
-  constructor(private model: IModel, private payment: IPayment) { }
+  constructor(private model: IModel, private payment: IPayment) {}
   // Gets a list of Models
   public index = async (ctx: IContext) => {
     try {
@@ -36,9 +36,7 @@ export class Controller {
 
   public testChargeWebhook = async (ctx: IContext) => {
     try {
-      const entity: any = await this.model
-        .findById(ctx.params.id)
-        .exec();
+      const entity: any = await this.model.findById(ctx.params.id).exec();
       if (!entity) throw Boom.notFound();
       entity.paid = true;
       await entity.save();
@@ -80,7 +78,8 @@ export class Controller {
 
   private createPayment = async (entity: any): Promise<any> => {
     if (this.payment.test) {
-      const webhook = this.webhookPrefix + '/pay/' + entity.channel + '/test/' + entity._id;
+      const webhook =
+        this.webhookPrefix + '/pay/' + entity.channel + '/test/' + entity._id;
       return {
         isYcsTest: true,
         webhook: webhook,

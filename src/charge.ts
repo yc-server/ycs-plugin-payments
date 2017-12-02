@@ -72,7 +72,7 @@ export interface IChargeDocument {
 
 export interface IPayment {
   path: string;
-  test: boolean;
+  test?: boolean;
   channels: EChannel[];
   currencies: ECurrency[];
   parameters: IDocsDataTypeProperties;
