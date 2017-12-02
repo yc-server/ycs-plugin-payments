@@ -23,13 +23,12 @@ export class Controller {
   public create = async (ctx: IContext) => {
     try {
       const doc: any = await this.payment.charge(ctx);
-      delete doc.status;
+      delete doc.paid;
       delete doc.createdAt;
       delete doc.updatedAt;
-      const entity = (await this.model.create(doc)) as any;
+      const entity = await this.model.create(doc);
       const res = await this.createPayment(entity);
-      await entity.save();
-      response(ctx, 201, entity);
+      response(ctx, 201, res);
     } catch (e) {
       handleError(ctx, e);
     }
