@@ -71,7 +71,7 @@ export class Controller {
     }
   };
 
-  private createPaymentForAlipay = (entity: any): Promise<any> => {
+  private createPaymentForAlipay = async (entity: any): Promise<any> => {
     const req = new TradeAppPayRequest();
     req.setBizContent({
       subject: entity.subject,
@@ -80,6 +80,6 @@ export class Controller {
       body: entity.body,
     });
     req.data.notify_url = this.webhookPrefix + '/pay/' + entity.channel;
-    return this.payment.alipayClient.execute(req);
+    return this.payment.alipayClient.generateRequestParams(req);
   };
 }
