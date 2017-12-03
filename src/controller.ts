@@ -44,7 +44,7 @@ export class Controller {
       ctx.status = 200;
       ctx.body = {
         isYcsTest: true,
-        success: true
+        success: true,
       };
     } catch (e) {
       handleError(ctx, e);
