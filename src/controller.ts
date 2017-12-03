@@ -103,6 +103,11 @@ export class Controller {
       body: entity.body,
     });
     req.data.notify_url = this.webhookPrefix + '/pay/' + entity.channel;
-    return this.payment.alipayClient.generateRequestParams(req);
+    const charge = this.payment.alipayClient.generateRequestParams(req);
+    return {
+      isYcsTest: false,
+      channel: entity.channel,
+      charge: charge,
+    };
   };
 }
