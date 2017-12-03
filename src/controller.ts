@@ -42,7 +42,10 @@ export class Controller {
       await entity.save();
       await this.payment.chargeWebhook(entity);
       ctx.status = 200;
-      ctx.body = 'success';
+      ctx.body = {
+        isYcsTest: true,
+        success: true
+      };
     } catch (e) {
       handleError(ctx, e);
     }
