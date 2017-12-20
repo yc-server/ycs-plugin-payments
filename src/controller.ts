@@ -2,11 +2,10 @@ import { IContext } from '@ycs/core/lib/context';
 import { IModel, paginate } from '@ycs/core/lib/db';
 import { Boom, handleError } from '@ycs/core/lib/errors';
 import { response } from '@ycs/core/lib/response';
-import { IPayment, IChargeDocument, EChannel } from './charge';
-import { Client, TradeAppPayRequest } from '@ycnt/alipay';
+import { IPayment, EChannel, charge } from './charge';
+import { refund } from './refund';
 
 export class Controller {
-  public webhookPrefix: string;
   constructor(private model: IModel, private payment: IPayment) {}
   // Gets a list of Models
   public index = async (ctx: IContext) => {
@@ -26,8 +25,21 @@ export class Controller {
       delete doc.paid;
       delete doc.createdAt;
       delete doc.updatedAt;
-      const entity = await this.model.create(doc);
-      const res = await this.createPayment(entity);
+      const res = await charge(this.payment, doc);
+      response(ctx, 201, res);
+    } catch (e) {
+      handleError(ctx, e);
+    }
+  };
+
+  // Creates a refund
+  public refund = async (ctx: IContext) => {
+    try {
+      const res = await refund(
+        this.payment,
+        ctx.request.fields.charge,
+        ctx.request.fields.reason
+      );
       response(ctx, 201, res);
     } catch (e) {
       handleError(ctx, e);
@@ -41,11 +53,10 @@ export class Controller {
       entity.paid = true;
       await entity.save();
       await this.payment.chargeWebhook(entity);
-      ctx.status = 200;
-      ctx.body = {
+      response(ctx, 200, {
         isYcsTest: true,
         success: true,
-      };
+      });
     } catch (e) {
       handleError(ctx, e);
     }
@@ -77,40 +88,5 @@ export class Controller {
     } catch (e) {
       handleError(ctx, e);
     }
-  };
-
-  private createPayment = async (entity: any): Promise<any> => {
-    if (this.payment.test) {
-      const webhook =
-        this.webhookPrefix + '/pay/' + entity.channel + '/test/' + entity._id;
-      return {
-        isYcsTest: true,
-        webhook: webhook,
-        charge: entity,
-      };
-    }
-    switch (entity.channel) {
-      case EChannel.alipay:
-        return await this.createPaymentForAlipay(entity);
-      default:
-        throw Boom.badData('Unsupported payment method');
-    }
-  };
-
-  private createPaymentForAlipay = async (entity: any): Promise<any> => {
-    const req = new TradeAppPayRequest();
-    req.setBizContent({
-      subject: entity.subject,
-      out_trade_no: entity._id,
-      total_amount: entity.amount.toString(),
-      body: entity.body,
-    });
-    req.data.notify_url = this.webhookPrefix + '/pay/' + entity.channel;
-    const charge = this.payment.alipayClient.generateRequestParams(req);
-    return {
-      isYcsTest: false,
-      channel: entity.channel,
-      charge: charge,
-    };
   };
 }
