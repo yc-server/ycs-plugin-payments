@@ -1,7 +1,7 @@
 import { IModel, Model, Schema } from '@ycs/core/lib/db';
 import { IDocsDataTypeProperties } from '@ycs/core/lib/docs';
 import { IContext } from '@ycs/core/lib/context';
-import { IPayment, getModel as getChargeModel, EChannel } from './charge';
+import { IPayment, EChannel, getModel as getChargeModel } from './charge';
 import { Boom } from '@ycs/core/lib/errors';
 import { TradeRefundRequest } from '@ycnt/alipay';
 
@@ -72,13 +72,14 @@ export async function refund(
   chargeId: string,
   reason: string
 ): Promise<any> {
+  if (!payment.refund) throw Boom.badData('Payment disabled');
   const chargeModel = getChargeModel(payment.path);
   const refundModel = getModel(payment.path);
   const charge: any = await chargeModel.findById(chargeId).exec();
   if (!charge) throw Boom.notFound('Charge not found');
   const refund = await createRefund(payment, charge, reason);
   const res = await refundModel.create(refund);
-  if (payment.refund) payment.refund(res);
+  payment.refund(res);
   return res;
 }
 
@@ -116,9 +117,9 @@ async function createRefundForAlipay(
     refund_reason: reason,
   });
   try {
-    const refund = await this.payment.alipayClient.execute(req);
+    const refund = await payment.alipayClient.execute(req);
     const success =
-      refund.alipay_trade_refund_response &&
+      !!refund.alipay_trade_refund_response &&
       refund.alipay_trade_refund_response.code === '10000';
     return {
       charge: charge,

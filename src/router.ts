@@ -76,7 +76,10 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
           '5xx': chargeModel.docSchema.response5xx,
         },
       },
-      {
+    ];
+
+    if (payment.refund) {
+      paths.push({
         path: '/refund/:id',
         methods: ['post'],
         controller: controller.refund,
@@ -112,8 +115,8 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
           '4xx': refundModel.docSchema.response4xx,
           '5xx': refundModel.docSchema.response5xx,
         },
-      },
-    ];
+      })
+    }
 
     if (payment.https) {
       let url = `https://${app.config.domain}`;
