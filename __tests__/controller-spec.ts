@@ -9,7 +9,7 @@ jest.mock('@ycs/core/lib/response', () => {
     response: jest.fn().mockImplementation((x, y, z) => {
       return { x, y, z };
     }),
-  }
+  };
 });
 
 // console.error = jest.fn();
@@ -18,7 +18,8 @@ jest.mock('@ycs/core/lib/response', () => {
 describe('test controller', () => {
   it('should test index', async () => {
     const ctrl = new Controller('' as any, '' as any);
-    (db as any).paginate = jest.fn()
+    (db as any).paginate = jest
+      .fn()
       .mockImplementationOnce(x => 'ok')
       .mockImplementationOnce(x => Promise.reject('oops'));
     let err;
@@ -32,10 +33,14 @@ describe('test controller', () => {
   });
 
   it('should test create', async () => {
-    const ctrl = new Controller('' as any, {
-      charge: jest.fn().mockImplementation(x => ''),
-    } as any);
-    (charge as any).charge = jest.fn()
+    const ctrl = new Controller(
+      '' as any,
+      {
+        charge: jest.fn().mockImplementation(x => ''),
+      } as any
+    );
+    (charge as any).charge = jest
+      .fn()
       .mockImplementationOnce(x => 'ok')
       .mockImplementationOnce(x => Promise.reject('oops'));
     let err;
@@ -49,10 +54,14 @@ describe('test controller', () => {
   });
 
   it('should test refund', async () => {
-    const ctrl = new Controller('' as any, {
-      charge: jest.fn(),
-    } as any);
-    (refund as any).refund = jest.fn()
+    const ctrl = new Controller(
+      '' as any,
+      {
+        charge: jest.fn(),
+      } as any
+    );
+    (refund as any).refund = jest
+      .fn()
       .mockImplementationOnce(x => 'ok')
       .mockImplementationOnce(x => Promise.reject('oops'));
     let err;
@@ -74,41 +83,56 @@ describe('test controller', () => {
   });
 
   it('should test testChargeWebhook', async () => {
-    const ctrl = new Controller({
-      findById: jest.fn()
-        .mockImplementationOnce(() => {
-          return {
-            exec: jest.fn().mockImplementation(x => Promise.resolve(false)),
-          }
-        })
-        .mockImplementationOnce(() => {
-          return {
-            exec: jest.fn().mockImplementation(x => Promise.resolve({
-              save: jest.fn().mockImplementation(x => Promise.resolve('ok')),
-            })),
-          }
-        })
-        .mockImplementationOnce(() => {
-          return {
-            exec: jest.fn().mockImplementation(x => Promise.resolve({
-              save: jest.fn().mockImplementation(x => Promise.resolve()),
-            })),
-          }
-        })
-        .mockImplementationOnce(() => {
-          return {
-            exec: jest.fn().mockImplementation(x => Promise.resolve({
-              save: jest.fn().mockImplementation(x => Promise.resolve('ok')),
-            })),
-          }
-        }),
-    } as any, {
-      chargeWebhook: jest.fn()
-        .mockImplementationOnce(x => 'ok')
-        .mockImplementationOnce(x => 'ok')
-        .mockImplementationOnce(x => 'ok')
-        .mockImplementationOnce(x => Promise.reject('oops')),
-    } as any);
+    const ctrl = new Controller(
+      {
+        findById: jest
+          .fn()
+          .mockImplementationOnce(() => {
+            return {
+              exec: jest.fn().mockImplementation(x => Promise.resolve(false)),
+            };
+          })
+          .mockImplementationOnce(() => {
+            return {
+              exec: jest.fn().mockImplementation(x =>
+                Promise.resolve({
+                  save: jest
+                    .fn()
+                    .mockImplementation(x => Promise.resolve('ok')),
+                })
+              ),
+            };
+          })
+          .mockImplementationOnce(() => {
+            return {
+              exec: jest.fn().mockImplementation(x =>
+                Promise.resolve({
+                  save: jest.fn().mockImplementation(x => Promise.resolve()),
+                })
+              ),
+            };
+          })
+          .mockImplementationOnce(() => {
+            return {
+              exec: jest.fn().mockImplementation(x =>
+                Promise.resolve({
+                  save: jest
+                    .fn()
+                    .mockImplementation(x => Promise.resolve('ok')),
+                })
+              ),
+            };
+          }),
+      } as any,
+      {
+        chargeWebhook: jest
+          .fn()
+          .mockImplementationOnce(x => 'ok')
+          .mockImplementationOnce(x => 'ok')
+          .mockImplementationOnce(x => 'ok')
+          .mockImplementationOnce(x => Promise.reject('oops')),
+      } as any
+    );
     let err;
     try {
       await ctrl.testChargeWebhook({ params: '' } as any);
@@ -135,43 +159,49 @@ describe('test controller', () => {
   });
 
   it('should test chargeWebhookForAlipay', async () => {
-    const ctrl = new Controller({
-      findById: jest.fn().mockImplementation(() => {
-        return {
-          exec: jest.fn().mockImplementation(x => Promise.resolve({
-            save: jest.fn(),
-          })),
-        };
-      }),
-    } as any, {
-      alipayClient: {
-        verify: jest.fn()
-          .mockImplementationOnce(x => false)
-          .mockImplementation(x => true),
-      },
-      chargeWebhook: jest.fn(),
-    } as any);
+    const ctrl = new Controller(
+      {
+        findById: jest.fn().mockImplementation(() => {
+          return {
+            exec: jest.fn().mockImplementation(x =>
+              Promise.resolve({
+                save: jest.fn(),
+              })
+            ),
+          };
+        }),
+      } as any,
+      {
+        alipayClient: {
+          verify: jest
+            .fn()
+            .mockImplementationOnce(x => false)
+            .mockImplementation(x => true),
+        },
+        chargeWebhook: jest.fn(),
+      } as any
+    );
     let err;
     try {
       await (ctrl as any).chargeWebhookForAlipay({});
       await (ctrl as any).chargeWebhookForAlipay({
         request: {
           fields: {
-            trade_status: 'TRADE_SUCCESS'
+            trade_status: 'TRADE_SUCCESS',
           },
         },
       });
       await (ctrl as any).chargeWebhookForAlipay({
         request: {
           fields: {
-            trade_status: 'TRADE_SUCCESS'
+            trade_status: 'TRADE_SUCCESS',
           },
         },
       });
       await (ctrl as any).chargeWebhookForAlipay({
         request: {
           fields: {
-            trade_status: 'TRADE_FAIL'
+            trade_status: 'TRADE_FAIL',
           },
         },
       });

@@ -11,16 +11,17 @@ jest.mock('@ycnt/alipay', () => {
       setBizContent = jest.fn();
       data = {};
     },
-  }
+  };
 });
 
-(charge as any).getModel = jest.fn()
+(charge as any).getModel = jest
+  .fn()
   .mockImplementationOnce(x => {
     return {
       findById: jest.fn().mockImplementationOnce(x => {
         return {
           exec: jest.fn().mockImplementationOnce(x => null),
-        }
+        };
       }),
     };
   })
@@ -29,7 +30,7 @@ jest.mock('@ycnt/alipay', () => {
       findById: jest.fn().mockImplementationOnce(x => {
         return {
           exec: jest.fn().mockImplementationOnce(x => 'ok'),
-        }
+        };
       }),
     };
   })
@@ -38,7 +39,7 @@ jest.mock('@ycnt/alipay', () => {
       findById: jest.fn().mockImplementationOnce(x => {
         return {
           exec: jest.fn().mockImplementationOnce(x => 'ok'),
-        }
+        };
       }),
     };
   })
@@ -46,15 +47,17 @@ jest.mock('@ycnt/alipay', () => {
     return {
       findById: jest.fn().mockImplementationOnce(x => {
         return {
-          exec: jest.fn().mockImplementationOnce(x => Promise.resolve({
-            channel: EChannel.alipay
-          })),
-        }
+          exec: jest.fn().mockImplementationOnce(x =>
+            Promise.resolve({
+              channel: EChannel.alipay,
+            })
+          ),
+        };
       }),
     };
   });
 
-(db as any).Model = jest.fn()
+(db as any).Model = jest.fn();
 
 describe('Test refund', () => {
   it('should create model', () => {
@@ -73,28 +76,52 @@ describe('Test refund', () => {
     (db as any).Model.mockImplementationOnce(x => {
       return {
         create: jest.fn().mockImplementation(x => x),
-      }
+      };
     });
     const model: any = refund.createModel({ path: 'order' } as any);
     webhook.addWebhook('order', 'ok');
     let err;
     try {
-      await refund.refund({
-        path: 'order',
-        test: true,
-        channels: [],
-        currencies: [],
-        parameters: {},
-        charge: x => x as any,
-        chargeWebhook: x => x as any,
-      }, '001', 'no reason');
+      await refund.refund(
+        {
+          path: 'order',
+          test: true,
+          channels: [],
+          currencies: [],
+          parameters: {},
+          charge: x => x as any,
+          chargeWebhook: x => x as any,
+        },
+        '001',
+        'no reason'
+      );
     } catch (e) {
       err = e;
     }
     expect(err.message).toBe('Payment disabled');
 
     try {
-      await refund.refund({
+      await refund.refund(
+        {
+          path: 'order',
+          test: true,
+          channels: [],
+          currencies: [],
+          parameters: {},
+          charge: x => x as any,
+          chargeWebhook: x => x as any,
+          refund: jest.fn(),
+        },
+        '001',
+        'no reason'
+      );
+    } catch (e) {
+      err = e;
+    }
+    expect(err.message).toBe('Charge not found');
+
+    const res = await refund.refund(
+      {
         path: 'order',
         test: true,
         channels: [],
@@ -103,114 +130,149 @@ describe('Test refund', () => {
         charge: x => x as any,
         chargeWebhook: x => x as any,
         refund: jest.fn(),
-      }, '001', 'no reason');
-    } catch (e) {
-      err = e;
-    }
-    expect(err.message).toBe('Charge not found');
-
-    const res = await refund.refund({
-      path: 'order',
-      test: true,
-      channels: [],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-      refund: jest.fn(),
-    }, '001', 'no reason');
+      },
+      '001',
+      'no reason'
+    );
     expect(res).toMatchObject({
       amount: undefined,
       charge: 'ok',
       extra: {
-        isYcsTest: true
+        isYcsTest: true,
       },
       reason: 'no reason',
-      success: true
+      success: true,
     });
   });
-
 
   it('should generate a alipay refund', async () => {
     let err;
     try {
-      await refund.refund({
-        path: 'order',
-        channels: [],
-        currencies: [],
-        parameters: {},
-        charge: x => x as any,
-        chargeWebhook: x => x as any,
-        refund: jest.fn(),
-      }, '001', 'no reason');
+      await refund.refund(
+        {
+          path: 'order',
+          channels: [],
+          currencies: [],
+          parameters: {},
+          charge: x => x as any,
+          chargeWebhook: x => x as any,
+          refund: jest.fn(),
+        },
+        '001',
+        'no reason'
+      );
     } catch (e) {
       err = e;
     }
     expect(err.message).toBe('Unsupported refund method');
 
-    const res = await refund.refund({
-      path: 'order',
-      channels: [EChannel.alipay],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-      refund: jest.fn(),
-      alipayClient: {
-        execute: jest.fn().mockImplementation(x => 'ok'),
-      } as any,
-    }, '001', 'no reason');
-    expect(res).toMatchObject({ "amount": undefined, "charge": { "channel": "alipay" }, "extra": "ok", "reason": "no reason", "success": false });
+    const res = await refund.refund(
+      {
+        path: 'order',
+        channels: [EChannel.alipay],
+        currencies: [],
+        parameters: {},
+        charge: x => x as any,
+        chargeWebhook: x => x as any,
+        refund: jest.fn(),
+        alipayClient: {
+          execute: jest.fn().mockImplementation(x => 'ok'),
+        } as any,
+      },
+      '001',
+      'no reason'
+    );
+    expect(res).toMatchObject({
+      amount: undefined,
+      charge: { channel: 'alipay' },
+      extra: 'ok',
+      reason: 'no reason',
+      success: false,
+    });
 
-    const res2 = await refund.refund({
-      path: 'order',
-      channels: [EChannel.alipay],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-      refund: jest.fn(),
-      alipayClient: {
-        execute: jest.fn().mockImplementation(x => Promise.resolve({
-          alipay_trade_refund_response: {
-            code: '10000',
-          },
-        })),
-      } as any,
-    }, '001', 'no reason');
-    expect(res2).toMatchObject({ "amount": undefined, "charge": { "channel": "alipay" }, "extra": { "alipay_trade_refund_response": { "code": "10000" } }, "reason": "no reason", "success": true });
+    const res2 = await refund.refund(
+      {
+        path: 'order',
+        channels: [EChannel.alipay],
+        currencies: [],
+        parameters: {},
+        charge: x => x as any,
+        chargeWebhook: x => x as any,
+        refund: jest.fn(),
+        alipayClient: {
+          execute: jest.fn().mockImplementation(x =>
+            Promise.resolve({
+              alipay_trade_refund_response: {
+                code: '10000',
+              },
+            })
+          ),
+        } as any,
+      },
+      '001',
+      'no reason'
+    );
+    expect(res2).toMatchObject({
+      amount: undefined,
+      charge: { channel: 'alipay' },
+      extra: { alipay_trade_refund_response: { code: '10000' } },
+      reason: 'no reason',
+      success: true,
+    });
 
-    const res3 = await refund.refund({
-      path: 'order',
-      channels: [EChannel.alipay],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-      refund: jest.fn(),
-      alipayClient: {
-        execute: jest.fn().mockImplementation(x => Promise.resolve({
-          alipay_trade_refund_response: {
-            code: '10001',
-          },
-        })),
-      } as any,
-    }, '001', 'no reason');
-    expect(res3).toMatchObject({ "amount": undefined, "charge": { "channel": "alipay" }, "extra": { "alipay_trade_refund_response": { "code": "10001" } }, "reason": "no reason", "success": false });
+    const res3 = await refund.refund(
+      {
+        path: 'order',
+        channels: [EChannel.alipay],
+        currencies: [],
+        parameters: {},
+        charge: x => x as any,
+        chargeWebhook: x => x as any,
+        refund: jest.fn(),
+        alipayClient: {
+          execute: jest.fn().mockImplementation(x =>
+            Promise.resolve({
+              alipay_trade_refund_response: {
+                code: '10001',
+              },
+            })
+          ),
+        } as any,
+      },
+      '001',
+      'no reason'
+    );
+    expect(res3).toMatchObject({
+      amount: undefined,
+      charge: { channel: 'alipay' },
+      extra: { alipay_trade_refund_response: { code: '10001' } },
+      reason: 'no reason',
+      success: false,
+    });
 
-    const res4 = await refund.refund({
-      path: 'order',
-      channels: [EChannel.alipay],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-      refund: jest.fn(),
-      alipayClient: {
-        execute: jest.fn().mockImplementation(x => Promise.reject('oops')),
-      } as any,
-    }, '001', 'no reason');
-    expect(res4).toMatchObject({ "amount": undefined, "charge": { "channel": "alipay" }, "extra": "oops", "reason": "no reason", "success": false });
+    const res4 = await refund.refund(
+      {
+        path: 'order',
+        channels: [EChannel.alipay],
+        currencies: [],
+        parameters: {},
+        charge: x => x as any,
+        chargeWebhook: x => x as any,
+        refund: jest.fn(),
+        alipayClient: {
+          execute: jest.fn().mockImplementation(x => Promise.reject('oops')),
+        } as any,
+      },
+      '001',
+      'no reason'
+    );
+    expect(res4).toMatchObject({
+      amount: undefined,
+      charge: { channel: 'alipay' },
+      extra: 'oops',
+      reason: 'no reason',
+      success: false,
+    });
   });
 
   // it('should generate alipay charge', async () => {
