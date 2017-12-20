@@ -4,6 +4,8 @@ import { Router } from '@ycs/core/lib/routers';
 import { IConfig } from './config';
 import { Controller } from './controller';
 import { createModel as createChargeModel } from './charge';
+import { createModel as createRefundModel } from './refund';
+import { addWebhook } from './webhook';
 
 export async function setupRouter(app: Ycs): Promise<Router[]> {
   const config: IConfig = app.config.payments;
@@ -11,9 +13,13 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
 
   for (const payment of config.payments) {
     const chargeModel = createChargeModel(payment);
+    let refundModel;
+    if (payment.refund) refundModel = createRefundModel(payment);
     const controller = new Controller(chargeModel, payment);
     const prefix = '__payments_' + payment.path;
     const chargePrefix = prefix + '_charge';
+    const refundPrefix = prefix + '_refund';
+    const webhookPrefix = prefix + '_webhook';
     const paths: IDocs[] = [
       {
         path: '/charge',
@@ -45,12 +51,23 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
         auth: {
           type: 'isAuthenticated',
         },
-        tags: [prefix],
+        tags: [chargePrefix],
         summary: 'create a charge',
         description: 'create a charge',
         consumes: ['application/json', 'application/xml'],
         produces: ['application/json', 'application/xml'],
-        parameters: [chargeModel.docSchema.body],
+        parameters: [
+          {
+            name: 'body',
+            in: 'body',
+            schema: {
+              type: 'object',
+              properties: payment.parameters,
+              xml: { name: 'xml' },
+              required: true,
+            },
+          },
+        ],
         responses: {
           200: {
             description: 'Successful operation',
@@ -61,45 +78,102 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
       },
     ];
 
+    if (payment.refund) {
+      paths.push({
+        path: '/refund/:id',
+        methods: ['post'],
+        controller: controller.refund,
+        auth: {
+          type: 'hasRoles',
+          roles: config.roles,
+        },
+        tags: [refundPrefix],
+        summary: 'create a refund',
+        description: 'create a refund',
+        consumes: ['application/json', 'application/xml'],
+        produces: ['application/json', 'application/xml'],
+        parameters: [
+          {
+            name: 'body',
+            in: 'body',
+            schema: {
+              type: 'object',
+              properties: {
+                reason: {
+                  type: 'string',
+                },
+              },
+              xml: { name: 'xml' },
+              required: true,
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Successful operation',
+          },
+          '4xx': refundModel.docSchema.response4xx,
+          '5xx': refundModel.docSchema.response5xx,
+        },
+      });
+    }
+
     if (payment.https) {
       let url = `https://${app.config.domain}`;
       if (app.config.spdy.port !== 443) {
         url += `:${app.config.spdy.port}`;
       }
-      controller.webhookPrefix = `${url}/${prefix}/webhook`;
+      addWebhook(payment.path, `${url}/${prefix}/webhook`);
     } else {
       let url = `http://${app.config.domain}`;
       if (app.config.port !== 80) {
         url += `:${app.config.port}`;
       }
-      controller.webhookPrefix = `${url}/${prefix}/webhook`;
+      addWebhook(payment.path, `${url}/${prefix}/webhook`);
     }
     for (const chanel of payment.channels) {
-      paths.push({
-        path: '/',
-        methods: ['post'],
-        controller: controller.createWebhook(chanel),
-        auth: {
-          type: 'hasRoles',
-          roles: config.roles,
-        },
-        tags: ['__rolesmanager'],
-        summary: 'Manage roles',
-        description: `<b>require roles: </b>${config.roles.join()}`,
-        consumes: ['application/json', 'application/xml'],
-        produces: ['application/json', 'application/xml'],
-        parameters: [],
-        responses: {
-          200: {
-            description: 'Successful operation',
+      if (payment.test) {
+        paths.push({
+          path: '/webhook/pay/' + chanel + '/test/:id',
+          methods: ['post'],
+          controller: controller.testChargeWebhook,
+          tags: [webhookPrefix],
+          summary: 'webhook for payments',
+          description: 'webhook for payments',
+          consumes: ['application/json', 'application/xml'],
+          produces: ['application/json', 'application/xml'],
+          parameters: [chargeModel.docSchema.paramId],
+          responses: {
+            200: {
+              description: 'Successful operation',
+            },
+            '4xx': chargeModel.docSchema.response4xx,
+            '5xx': chargeModel.docSchema.response5xx,
           },
-          '4xx': chargeModel.docSchema.response4xx,
-          '5xx': chargeModel.docSchema.response5xx,
-        },
-      });
+        });
+      } else {
+        paths.push({
+          path: '/webhook/pay/' + chanel,
+          methods: ['post'],
+          controller: controller.createChargeWebhook(chanel),
+          tags: [webhookPrefix],
+          summary: 'webhook for payments',
+          description: 'webhook for payments',
+          consumes: ['application/json', 'application/xml'],
+          produces: ['application/json', 'application/xml'],
+          parameters: [],
+          responses: {
+            200: {
+              description: 'Successful operation',
+            },
+            '4xx': chargeModel.docSchema.response4xx,
+            '5xx': chargeModel.docSchema.response5xx,
+          },
+        });
+      }
     }
 
-    routers.push(chargeModel.routes(prefix, ...paths));
+    routers.push(chargeModel.routes('/' + prefix, ...paths));
   }
 
   return routers;

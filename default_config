@@ -1,6 +1,5 @@
 import { IContext } from '@ycs/core/lib/context';
-// import { IConfig } from 'ycs-plugin-payments';
-import { IConfig, EChannel, ECurrency, IChargeDocument } from './src/';
+import { IConfig, EChannel, ECurrency, IChargeDocument } from 'ycs-plugin-payments';
 import { Client, EClientSignType } from '@ycnt/alipay';
 
 export const development: IConfig = {
@@ -10,6 +9,16 @@ export const development: IConfig = {
       path: 'order',
       channels: [EChannel.alipay],
       currencies: [ECurrency.cny],
+      parameters: {
+        orderId: {
+          type: 'string',
+          description: 'order id',
+        },
+        channel: {
+          type: 'string',
+          description: 'channel. ["alipay"]',
+        },
+      },
       charge: async (ctx: IContext): Promise<IChargeDocument> => {
         const order: any = 'xxx';
         return {
@@ -25,7 +34,7 @@ export const development: IConfig = {
           __auth: ctx.request.auth._id,
         };
       },
-      webhook: async (doc: IChargeDocument): Promise<void> => {
+      chargeWebhook: async (doc: IChargeDocument): Promise<void> => {
         const order: any = 'xxx by doc.extra.orderId';
         order.status = 'paid';
         await order.save()
@@ -49,6 +58,16 @@ export const production: IConfig = {
       path: 'order',
       channels: [EChannel.alipay],
       currencies: [ECurrency.cny],
+      parameters: {
+        orderId: {
+          type: 'string',
+          description: 'order id',
+        },
+        channel: {
+          type: 'string',
+          description: 'channel. ["alipay"]',
+        },
+      },
       charge: async (ctx: IContext): Promise<IChargeDocument> => {
         const order: any = 'xxx';
         return {
@@ -64,7 +83,7 @@ export const production: IConfig = {
           __auth: ctx.request.auth._id,
         };
       },
-      webhook: async (doc: IChargeDocument): Promise<void> => {
+      chargeWebhook: async (doc: IChargeDocument): Promise<void> => {
         const order: any = 'xxx by doc.extra.orderId';
         order.status = 'paid';
         await order.save()
