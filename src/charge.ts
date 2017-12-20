@@ -185,7 +185,10 @@ export interface IPayment {
   refund?: (doc: any) => any;
 }
 
-export async function charge(payment: IPayment, doc: IChargeDocument): Promise<any> {
+export async function charge(
+  payment: IPayment,
+  doc: IChargeDocument
+): Promise<any> {
   const model = getModel(payment.path);
   const entity = await model.create(doc);
   return createCharge(payment, entity);

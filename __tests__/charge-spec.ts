@@ -9,8 +9,8 @@ jest.mock('@ycnt/alipay', () => {
       setBizContent = jest.fn();
       data = {};
     },
-  }
-})
+  };
+});
 
 jest.mock('@ycs/core/lib/db', () => {
   return {
@@ -47,22 +47,25 @@ describe('Test charge', () => {
     });
     charge.createModel({ path: 'order' } as any);
     webhook.addWebhook('order', 'ok');
-    const res = await charge.charge({
-      path: 'order',
-      test: true,
-      channels: [],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-    }, {} as any);
+    const res = await charge.charge(
+      {
+        path: 'order',
+        test: true,
+        channels: [],
+        currencies: [],
+        parameters: {},
+        charge: x => x as any,
+        chargeWebhook: x => x as any,
+      },
+      {} as any
+    );
     expect(res).toMatchObject({
       charge: {
         channel: 'alipay',
         _id: '001',
       },
       isYcsTest: true,
-      webhook: 'ok/pay/alipay/test/001'
+      webhook: 'ok/pay/alipay/test/001',
     });
   });
 
@@ -81,17 +84,20 @@ describe('Test charge', () => {
     });
     charge.createModel({ path: 'order2' } as any);
     webhook.addWebhook('order2', 'ok');
-    const res = await charge.charge({
-      path: 'order2',
-      channels: [charge.EChannel.alipay],
-      currencies: [],
-      parameters: {},
-      charge: x => x as any,
-      chargeWebhook: x => x as any,
-      alipayClient: {
-        generateRequestParams: jest.fn().mockImplementation(x => 'ok'),
-      } as any,
-    }, {} as any);
+    const res = await charge.charge(
+      {
+        path: 'order2',
+        channels: [charge.EChannel.alipay],
+        currencies: [],
+        parameters: {},
+        charge: x => x as any,
+        chargeWebhook: x => x as any,
+        alipayClient: {
+          generateRequestParams: jest.fn().mockImplementation(x => 'ok'),
+        } as any,
+      },
+      {} as any
+    );
     expect(res).toMatchObject({
       charge: 'ok',
       isYcsTest: false,
@@ -116,20 +122,23 @@ describe('Test charge', () => {
     webhook.addWebhook('order3', 'ok');
     let err;
     try {
-      const res = await charge.charge({
-        path: 'order3',
-        channels: [charge.EChannel.alipay],
-        currencies: [],
-        parameters: {},
-        charge: x => x as any,
-        chargeWebhook: x => x as any,
-        alipayClient: {
-          generateRequestParams: jest.fn().mockImplementation(x => 'ok'),
-        } as any,
-      }, {} as any);
+      const res = await charge.charge(
+        {
+          path: 'order3',
+          channels: [charge.EChannel.alipay],
+          currencies: [],
+          parameters: {},
+          charge: x => x as any,
+          chargeWebhook: x => x as any,
+          alipayClient: {
+            generateRequestParams: jest.fn().mockImplementation(x => 'ok'),
+          } as any,
+        },
+        {} as any
+      );
     } catch (e) {
       err = e;
     }
     expect(err.message).toBe('Unsupported payment method');
-  })
+  });
 });

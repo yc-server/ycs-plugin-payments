@@ -115,7 +115,7 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
           '4xx': refundModel.docSchema.response4xx,
           '5xx': refundModel.docSchema.response5xx,
         },
-      })
+      });
     }
 
     if (payment.https) {
