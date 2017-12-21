@@ -4,7 +4,7 @@ import { Router } from '@ycs/core/lib/routers';
 import { IConfig } from './config';
 import { Controller } from './controller';
 import { createModel as createChargeModel } from './charge';
-import { createModel as createRefundModel } from './refund';
+import { createModel as createRefundModel, refund } from './refund';
 import { addWebhook } from './webhook';
 
 export async function setupRouter(app: Ycs): Promise<Router[]> {
@@ -93,6 +93,7 @@ export async function setupRouter(app: Ycs): Promise<Router[]> {
         consumes: ['application/json', 'application/xml'],
         produces: ['application/json', 'application/xml'],
         parameters: [
+          refundModel.docSchema.paramId,
           {
             name: 'body',
             in: 'body',
