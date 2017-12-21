@@ -63,7 +63,6 @@ describe('Test refund', () => {
   it('should create model', () => {
     (db as any).Model.mockImplementationOnce(x => x);
     const model: any = refund.createModel({ path: 'ok' } as any);
-    expect(model.auth).toBe(true);
     expect(model.name).toBe('__payments_refund_ok');
   });
 
