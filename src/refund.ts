@@ -45,7 +45,6 @@ export function createModel(payment: IPayment): IModel {
   const model = Model({
     name: '__payments_refund_' + payment.path,
     schema,
-    auth: true,
   });
   models.push({ path: payment.path, model: model });
   return model;

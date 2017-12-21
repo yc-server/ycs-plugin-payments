@@ -37,7 +37,7 @@ export class Controller {
     try {
       const res = await refund(
         this.payment,
-        ctx.request.fields.charge,
+        ctx.params.id,
         ctx.request.fields.reason
       );
       response(ctx, 201, res);
