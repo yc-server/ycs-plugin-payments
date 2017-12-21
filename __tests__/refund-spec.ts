@@ -136,7 +136,7 @@ describe('Test refund', () => {
     );
     expect(res).toMatchObject({
       amount: undefined,
-      charge: 'ok',
+      charge: undefined,
       extra: {
         isYcsTest: true,
       },
@@ -184,7 +184,7 @@ describe('Test refund', () => {
     );
     expect(res).toMatchObject({
       amount: undefined,
-      charge: { channel: 'alipay' },
+      charge: undefined,
       extra: 'ok',
       reason: 'no reason',
       success: false,
@@ -214,7 +214,7 @@ describe('Test refund', () => {
     );
     expect(res2).toMatchObject({
       amount: undefined,
-      charge: { channel: 'alipay' },
+      charge: undefined,
       extra: { alipay_trade_refund_response: { code: '10000' } },
       reason: 'no reason',
       success: true,
@@ -244,7 +244,7 @@ describe('Test refund', () => {
     );
     expect(res3).toMatchObject({
       amount: undefined,
-      charge: { channel: 'alipay' },
+      charge: undefined,
       extra: { alipay_trade_refund_response: { code: '10001' } },
       reason: 'no reason',
       success: false,
@@ -268,7 +268,7 @@ describe('Test refund', () => {
     );
     expect(res4).toMatchObject({
       amount: undefined,
-      charge: { channel: 'alipay' },
+      charge: undefined,
       extra: 'oops',
       reason: 'no reason',
       success: false,
