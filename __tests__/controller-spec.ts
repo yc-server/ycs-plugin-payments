@@ -67,11 +67,13 @@ describe('test controller', () => {
     let err;
     try {
       await ctrl.refund({
+        params: {},
         request: {
           fields: {},
         },
       } as any);
       await ctrl.refund({
+        params: {},
         request: {
           fields: {},
         },
@@ -186,6 +188,7 @@ describe('test controller', () => {
       await (ctrl as any).chargeWebhookForAlipay({});
       await (ctrl as any).chargeWebhookForAlipay({
         request: {
+          params: {},
           fields: {
             trade_status: 'TRADE_SUCCESS',
           },
@@ -193,6 +196,7 @@ describe('test controller', () => {
       });
       await (ctrl as any).chargeWebhookForAlipay({
         request: {
+          params: {},
           fields: {
             trade_status: 'TRADE_SUCCESS',
           },
@@ -200,6 +204,7 @@ describe('test controller', () => {
       });
       await (ctrl as any).chargeWebhookForAlipay({
         request: {
+          params: {},
           fields: {
             trade_status: 'TRADE_FAIL',
           },
