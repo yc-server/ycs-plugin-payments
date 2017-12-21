@@ -90,7 +90,7 @@ async function createRefund(
 ): Promise<any> {
   if (payment.test) {
     return {
-      charge: charge,
+      charge: charge._id,
       amount: charge.amount,
       reason: reason,
       success: true,
@@ -122,7 +122,7 @@ async function createRefundForAlipay(
       !!refund.alipay_trade_refund_response &&
       refund.alipay_trade_refund_response.code === '10000';
     return {
-      charge: charge,
+      charge: charge._id,
       amount: charge.amount,
       reason: reason,
       success: success,
@@ -130,7 +130,7 @@ async function createRefundForAlipay(
     };
   } catch (e) {
     return {
-      charge: charge,
+      charge: charge._id,
       amount: charge.amount,
       reason: reason,
       success: false,
