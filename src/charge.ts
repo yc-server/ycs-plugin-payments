@@ -4,6 +4,8 @@ import { IContext } from '@ycs/core/lib/context';
 import { getWebhook } from './webhook';
 import { Boom } from '@ycs/core/lib/errors';
 import { Client, TradeAppPayRequest } from '@ycnt/alipay';
+import { Wechatpay } from '@ycnt/wechatpay';
+import * as ip6addr from 'ip6addr';
 
 /**
  * All models
@@ -80,6 +82,10 @@ export enum EChannel {
    * Alipay
    */
   alipay = 'alipay',
+  /**
+   * Wechatpay
+   */
+  wechatpay = 'wechatpay',
 }
 
 export enum ECurrency {
@@ -175,6 +181,11 @@ export interface IPayment {
   alipayClient?: Client;
 
   /**
+   * Wechatpay client
+   */
+  wechatpayClient?: Wechatpay;
+
+  /**
    * Using https
    */
   https?: boolean;
@@ -208,6 +219,8 @@ async function createCharge(payment: IPayment, entity: any): Promise<any> {
   switch (entity.channel) {
     case EChannel.alipay:
       return createChargeForAlipay(payment, entity);
+    case EChannel.wechatpay:
+        return createChargeForWechatpay(payment, entity);
     default:
       throw Boom.badData('Unsupported payment method');
   }
@@ -227,6 +240,27 @@ async function createChargeForAlipay(
   const webhook = getWebhook(payment.path);
   req.data.notify_url = webhook.prefix + '/pay/' + entity.channel;
   const charge = payment.alipayClient.generateRequestParams(req);
+  return {
+    isYcsTest: false,
+    channel: entity.channel,
+    charge: charge,
+  };
+}
+
+async function createChargeForWechatpay(
+  payment: IPayment,
+  entity: any
+): Promise<any> {
+  const webhook = getWebhook(payment.path);
+  const order = await payment.wechatpayClient.createUnifiedOrder({
+    body: entity.subject,
+    out_trade_no: entity._id,
+    total_fee: entity.amount * 100,
+    spbill_create_ip: ip6addr.parse(entity.client_ip).toString({ format: 'v4' }),
+    notify_url: webhook.prefix + '/pay/' + entity.channel,
+    trade_type: 'APP',
+  });
+  const charge = payment.wechatpayClient.configForPayment(order);
   return {
     isYcsTest: false,
     channel: entity.channel,

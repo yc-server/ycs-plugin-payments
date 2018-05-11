@@ -6,7 +6,7 @@ import { IPayment, EChannel, charge } from './charge';
 import { refund } from './refund';
 
 export class Controller {
-  constructor(private model: IModel, private payment: IPayment) {}
+  constructor(private model: IModel, private payment: IPayment) { }
   // Gets a list of Models
   public index = async (ctx: IContext) => {
     try {
@@ -66,6 +66,8 @@ export class Controller {
     switch (channel) {
       case EChannel.alipay:
         return this.chargeWebhookForAlipay;
+      case EChannel.wechatpay:
+        return this.chargeWebhookForWechatpay;
       default:
         throw new Error('Unsupported payment channel');
     }
@@ -73,8 +75,6 @@ export class Controller {
 
   private chargeWebhookForAlipay = async (ctx: IContext) => {
     try {
-      console.log('q', ctx.request.query);
-      console.log('f', ctx.request.fields);
       const verified = this.payment.alipayClient.verify(ctx.request.fields);
       if (!verified) throw Boom.badData('failed to verify sign');
       if (ctx.request.fields.trade_status === 'TRADE_SUCCESS') {
@@ -87,6 +87,27 @@ export class Controller {
       }
       ctx.status = 200;
       ctx.body = 'success';
+    } catch (e) {
+      handleError(ctx, e);
+    }
+  };
+
+  private chargeWebhookForWechatpay = async (ctx: IContext) => {
+    try {
+      console.log('q', ctx.request.query);
+      console.log('f', ctx.request.fields);
+      const verified = this.payment.wechatpayClient.signVerify(ctx.request.fields);
+      if (!verified) throw Boom.badData('failed to verify sign');
+      if (ctx.request.fields.return_code === 'SUCCESS' && ctx.request.fields.result_code === 'SUCCESS') {
+        const entity: any = await this.model
+          .findById(ctx.request.fields.out_trade_no)
+          .exec();
+        entity.paid = true;
+        await entity.save();
+        await this.payment.chargeWebhook(entity);
+      }
+      ctx.status = 200;
+      ctx.body = this.payment.wechatpayClient.success();
     } catch (e) {
       handleError(ctx, e);
     }
