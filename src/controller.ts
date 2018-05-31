@@ -4,9 +4,10 @@ import { Boom, handleError } from '@ycs/core/lib/errors';
 import { response } from '@ycs/core/lib/response';
 import { IPayment, EChannel, charge } from './charge';
 import { refund } from './refund';
+import { Wechatpay } from '@ycnt/wechatpay';
 
 export class Controller {
-  constructor(private model: IModel, private payment: IPayment) { }
+  constructor(private model: IModel, private payment: IPayment) {}
   // Gets a list of Models
   public index = async (ctx: IContext) => {
     try {
@@ -67,6 +68,8 @@ export class Controller {
       case EChannel.alipay:
         return this.chargeWebhookForAlipay;
       case EChannel.wechatpay:
+      case EChannel.mppay:
+      case EChannel.minigrampay:
         return this.chargeWebhookForWechatpay;
       default:
         throw new Error('Unsupported payment channel');
@@ -94,11 +97,30 @@ export class Controller {
 
   private chargeWebhookForWechatpay = async (ctx: IContext) => {
     try {
-      console.log('q', ctx.request.query);
-      console.log('f', ctx.request.fields);
-      const verified = this.payment.wechatpayClient.signVerify(ctx.request.fields);
+      if (!ctx.request.fields.appid) throw Boom.badData('empty appid');
+      let client: Wechatpay;
+      if (
+        this.payment.wechatpayClient &&
+        this.payment.wechatpayClient.config.appid === ctx.request.fields.appid
+      )
+        client = this.payment.wechatpayClient;
+      else if (
+        this.payment.mppayClient &&
+        this.payment.mppayClient.config.appid === ctx.request.fields.appid
+      )
+        client = this.payment.mppayClient;
+      else if (
+        this.payment.minigrampayClient &&
+        this.payment.minigrampayClient.config.appid === ctx.request.fields.appid
+      )
+        client = this.payment.minigrampayClient;
+      if (!client) throw Boom.badData('invalid appid');
+      const verified = client.signVerify(ctx.request.fields);
       if (!verified) throw Boom.badData('failed to verify sign');
-      if (ctx.request.fields.return_code === 'SUCCESS' && ctx.request.fields.result_code === 'SUCCESS') {
+      if (
+        ctx.request.fields.return_code === 'SUCCESS' &&
+        ctx.request.fields.result_code === 'SUCCESS'
+      ) {
         const entity: any = await this.model
           .findById(ctx.request.fields.out_trade_no)
           .exec();
@@ -107,7 +129,7 @@ export class Controller {
         await this.payment.chargeWebhook(entity);
       }
       ctx.status = 200;
-      ctx.body = this.payment.wechatpayClient.success();
+      ctx.body = client.success();
     } catch (e) {
       handleError(ctx, e);
     }

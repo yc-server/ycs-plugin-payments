@@ -1,11 +1,18 @@
 import { IModel, Model, Schema } from '@ycs/core/lib/db';
 import { IDocsDataTypeProperties } from '@ycs/core/lib/docs';
 import { IContext } from '@ycs/core/lib/context';
-import { getWebhook } from './webhook';
 import { Boom } from '@ycs/core/lib/errors';
-import { Client, TradeAppPayRequest } from '@ycnt/alipay';
-import { Wechatpay } from '@ycnt/wechatpay';
+import {
+  Client,
+  TradeAppPayRequest,
+  TradePagePayRequest,
+  EProductCode,
+  Request,
+} from '@ycnt/alipay';
+import { Wechatpay, IOrderParams } from '@ycnt/wechatpay';
 import * as ip6addr from 'ip6addr';
+import { IRefundDocument } from './refund';
+import { getWebhook } from './webhook';
 
 /**
  * All models
@@ -32,6 +39,11 @@ export function createModel(payment: IPayment): IModel {
         require: true,
         enum: payment.currencies,
       },
+      device: {
+        type: String,
+        enum: ['app', 'wap', 'web'],
+        default: 'app',
+      },
       client_ip: {
         type: String,
         require: true,
@@ -48,6 +60,8 @@ export function createModel(payment: IPayment): IModel {
         type: Number,
         require: true,
       },
+      return_url: String,
+      openid: String,
       extra: {},
       paid: {
         type: Boolean,
@@ -86,6 +100,14 @@ export enum EChannel {
    * Wechatpay
    */
   wechatpay = 'wechatpay',
+  /**
+   * mppay
+   */
+  mppay = 'mppay',
+  /**
+   * minigrampay
+   */
+  minigrampay = 'minigrampay',
 }
 
 export enum ECurrency {
@@ -100,6 +122,11 @@ export interface IChargeDocument {
    * Payment channel
    */
   channel: EChannel;
+
+  /**
+   * Payment device default app
+   */
+  device?: 'app' | 'wap' | 'web';
 
   /**
    * Payment currency
@@ -132,6 +159,16 @@ export interface IChargeDocument {
   extra?: {
     [x: string]: any;
   };
+
+  /**
+   * Return url. for Webpage only.
+   */
+  return_url?: string;
+
+  /**
+   * user openid. for JSAPI only.
+   */
+  openid?: string;
 
   /**
    * Auth id
@@ -186,6 +223,16 @@ export interface IPayment {
   wechatpayClient?: Wechatpay;
 
   /**
+   * mppay client
+   */
+  mppayClient?: Wechatpay;
+
+  /**
+   * minigrampay client
+   */
+  minigrampayClient?: Wechatpay;
+
+  /**
    * Using https
    */
   https?: boolean;
@@ -193,7 +240,7 @@ export interface IPayment {
   /**
    * Enable refund
    */
-  refund?: (doc: any) => any;
+  refund?: (refund: IRefundDocument, charge: IChargeDocument) => Promise<void>;
 }
 
 export async function charge(
@@ -220,7 +267,9 @@ async function createCharge(payment: IPayment, entity: any): Promise<any> {
     case EChannel.alipay:
       return createChargeForAlipay(payment, entity);
     case EChannel.wechatpay:
-        return createChargeForWechatpay(payment, entity);
+    case EChannel.mppay:
+    case EChannel.minigrampay:
+      return createChargeForWechatpay(payment, entity);
     default:
       throw Boom.badData('Unsupported payment method');
   }
@@ -230,13 +279,28 @@ async function createChargeForAlipay(
   payment: IPayment,
   entity: any
 ): Promise<any> {
-  const req = new TradeAppPayRequest();
-  req.setBizContent({
-    subject: entity.subject,
-    out_trade_no: entity._id,
-    total_amount: entity.amount.toString(),
-    body: entity.body,
-  });
+  let req: any;
+  switch (entity.device) {
+    case 'web':
+      req = new TradePagePayRequest();
+      req.setBizContent({
+        subject: entity.subject,
+        out_trade_no: entity._id,
+        total_amount: entity.amount.toString(),
+        body: entity.body,
+        product_code: EProductCode.FAST_INSTANT_TRADE_PAY,
+      });
+      req.data.return_url = entity.return_url;
+      break;
+    default:
+      req = new TradeAppPayRequest();
+      req.setBizContent({
+        subject: entity.subject,
+        out_trade_no: entity._id,
+        total_amount: entity.amount.toString(),
+        body: entity.body,
+      });
+  }
   const webhook = getWebhook(payment.path);
   req.data.notify_url = webhook.prefix + '/pay/' + entity.channel;
   const charge = payment.alipayClient.generateRequestParams(req);
@@ -252,15 +316,37 @@ async function createChargeForWechatpay(
   entity: any
 ): Promise<any> {
   const webhook = getWebhook(payment.path);
-  const order = await payment.wechatpayClient.createUnifiedOrder({
+  const params: IOrderParams = {
     body: entity.subject,
-    out_trade_no: entity._id,
-    total_fee: entity.amount * 100,
-    spbill_create_ip: ip6addr.parse(entity.client_ip).toString({ format: 'v4' }),
+    out_trade_no: entity._id.toString(),
+    total_fee: Math.ceil(entity.amount * 100),
+    spbill_create_ip: ip6addr
+      .parse(entity.client_ip)
+      .toString({ format: 'v4' }),
     notify_url: webhook.prefix + '/pay/' + entity.channel,
-    trade_type: 'APP',
-  });
-  const charge = payment.wechatpayClient.configForPayment(order);
+    trade_type: entity.channel === EChannel.wechatpay ? 'APP' : 'JSAPI',
+  };
+
+  let order;
+  let charge;
+  switch (entity.channel) {
+    case EChannel.wechatpay:
+      order = await payment.wechatpayClient.createUnifiedOrder(params);
+      charge = payment.wechatpayClient.configForPayment(order);
+      break;
+    case EChannel.mppay:
+      params.openid = entity.openid;
+      order = await payment.mppayClient.createUnifiedOrder(params);
+      console.log('order', order);
+      charge = payment.mppayClient.configForPayment(order);
+      break;
+    case EChannel.minigrampay:
+      params.openid = entity.openid;
+      order = await payment.minigrampayClient.createUnifiedOrder(params);
+      console.log('order', order);
+      charge = payment.minigrampayClient.configForPayment(order);
+      break;
+  }
   return {
     isYcsTest: false,
     channel: entity.channel,

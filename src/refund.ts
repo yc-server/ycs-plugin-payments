@@ -4,6 +4,7 @@ import { IContext } from '@ycs/core/lib/context';
 import { IPayment, EChannel, getModel as getChargeModel } from './charge';
 import { Boom } from '@ycs/core/lib/errors';
 import { TradeRefundRequest } from '@ycnt/alipay';
+import { Wechatpay } from '@ycnt/wechatpay';
 
 /**
  * All models
@@ -60,6 +61,17 @@ export function getModel(path: string): IModel {
   return null;
 }
 
+export interface IRefundDocument {
+  charge: string;
+  amount: number;
+  reason: string;
+  success: boolean;
+  extra: {
+    isYcsTest?: true;
+    [x: string]: any;
+  };
+}
+
 /**
  * Refund a charge
  * @param payment {IPayment} payment path
@@ -78,7 +90,7 @@ export async function refund(
   if (!charge) throw Boom.notFound('Charge not found');
   const refund = await createRefund(payment, charge, reason);
   const res = await refundModel.create(refund);
-  payment.refund(res);
+  await payment.refund(refund, charge);
   return res;
 }
 
@@ -86,7 +98,7 @@ async function createRefund(
   payment: IPayment,
   charge: any,
   reason: string
-): Promise<any> {
+): Promise<IRefundDocument> {
   if (payment.test) {
     return {
       charge: charge._id,
@@ -99,6 +111,10 @@ async function createRefund(
   switch (charge.channel) {
     case EChannel.alipay:
       return createRefundForAlipay(payment, charge, reason);
+    case EChannel.wechatpay:
+    case EChannel.mppay:
+    case EChannel.minigrampay:
+      return createRefundForWechatpay(payment, charge, reason);
     default:
       throw Boom.badData('Unsupported refund method');
   }
@@ -108,11 +124,11 @@ async function createRefundForAlipay(
   payment: IPayment,
   charge: any,
   reason: string
-): Promise<any> {
+): Promise<IRefundDocument> {
   const req = new TradeRefundRequest();
   req.setBizContent({
     out_trade_no: charge._id,
-    refund_amount: charge.amount,
+    refund_amount: charge.amount.toString(),
     refund_reason: reason,
   });
   try {
@@ -120,6 +136,50 @@ async function createRefundForAlipay(
     const success =
       !!refund.alipay_trade_refund_response &&
       refund.alipay_trade_refund_response.code === '10000';
+    return {
+      charge: charge._id,
+      amount: charge.amount,
+      reason: reason,
+      success: success,
+      extra: refund,
+    };
+  } catch (e) {
+    return {
+      charge: charge._id,
+      amount: charge.amount,
+      reason: reason,
+      success: false,
+      extra: e,
+    };
+  }
+}
+
+async function createRefundForWechatpay(
+  payment: IPayment,
+  charge: any,
+  reason: string
+): Promise<IRefundDocument> {
+  try {
+    let client: Wechatpay;
+    switch (charge.channel) {
+      case EChannel.wechatpay:
+        client = payment.wechatpayClient;
+        break;
+      case EChannel.mppay:
+        client = payment.mppayClient;
+        break;
+      case EChannel.minigrampay:
+        client = payment.minigrampayClient;
+        break;
+    }
+    const refund = await client.refund({
+      out_trade_no: charge._id.toString(),
+      out_refund_no: charge._id.toString(),
+      total_fee: Math.round(charge.amount * 100),
+      refund_fee: Math.round(charge.amount * 100),
+    });
+    const success =
+      refund.return_code === 'SUCCESS' && refund.result_code === 'SUCCESS';
     return {
       charge: charge._id,
       amount: charge.amount,
