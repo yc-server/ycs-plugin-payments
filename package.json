@@ -1,6 +1,6 @@
 {
   "name": "ycs-plugin-payments",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "description": "ycs-plugin-payments",
   "license": "MIT",
   "repository": "https://github.com/yc-server/ycs-plugin-payments.git",

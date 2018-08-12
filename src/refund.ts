@@ -175,8 +175,8 @@ async function createRefundForWechatpay(
     const refund = await client.refund({
       out_trade_no: charge._id.toString(),
       out_refund_no: charge._id.toString(),
-      total_fee: Math.round(charge.amount * 100),
-      refund_fee: Math.round(charge.amount * 100),
+      total_fee: Math.ceil(charge.amount * 100),
+      refund_fee: Math.ceil(charge.amount * 100),
     });
     const success =
       refund.return_code === 'SUCCESS' && refund.result_code === 'SUCCESS';
