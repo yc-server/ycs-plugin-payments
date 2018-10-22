@@ -78,6 +78,7 @@ export class Controller {
 
   private chargeWebhookForAlipay = async (ctx: IContext) => {
     try {
+      console.log(ctx.request.fields);
       const verified = this.payment.alipayClient.verify(ctx.request.fields);
       if (!verified) throw Boom.badData('failed to verify sign');
       if (ctx.request.fields.trade_status === 'TRADE_SUCCESS') {
