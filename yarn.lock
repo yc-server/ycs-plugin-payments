@@ -142,9 +142,9 @@
   version "0.10.0"
   resolved "https://registry.npmjs.org/@types/xml2json/-/xml2json-0.10.0.tgz#e967e1ed62ce7a67266d739d78486cc57e125697"
 
-"@ycnt/alipay@^1.1.5":
-  version "1.1.5"
-  resolved "https://registry.npmjs.org/@ycnt/alipay/-/alipay-1.1.5.tgz#22ea0b0a270a2a83abbbe21108757ec39d846649"
+"@ycnt/alipay@^1.1.8":
+  version "1.1.8"
+  resolved "https://registry.npmjs.org/@ycnt/alipay/-/alipay-1.1.8.tgz#4a11a24eedd1a50ce3da206ccab2d492ac63856a"
   dependencies:
     moment "^2.19.2"
     request-promise "^4.2.2"
