@@ -336,6 +336,7 @@ async function createChargeForWechatpay(
       break;
     case EChannel.mppay:
       params.openid = entity.openid;
+      console.log('params', params);
       order = await payment.mppayClient.createUnifiedOrder(params);
       console.log('order', order);
       charge = payment.mppayClient.configForPayment(order);
